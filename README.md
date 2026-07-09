@@ -1,24 +1,28 @@
 # 🚀 LeadFlow AI
 
-LeadFlow AI is a CRM-style web application that helps users manage and organize lead data by uploading CSV files.
+LeadFlow AI is a CRM-style web application that helps users review and validate lead data by uploading CSV files.
 
-The application converts raw CSV lead information into a structured and easy-to-view format, making lead management faster and simpler.
+The application displays the original CSV data in a structured preview table before import. It checks whether each lead has at least one contact method and separates usable leads from incomplete leads.
 
 ## ✨ Features
 
-* 📂 Upload CSV lead files
-* 📊 Display lead information in a CRM-style dashboard
-* 🔍 Organize and view customer details
-* ⚡ Fast and responsive user interface
-* 🌐 Deployed as a live web application
+- 📂 Upload CSV lead files
+- 📊 Preview original CSV data in a structured table
+- 🔢 Shows the number of lead rows and columns found
+- 📞 Checks each lead for contact information
+- ✅ Imports a lead when it has an email address or phone number
+- ⏭️ Skips a lead only when both email and phone number are missing
+- 📈 Displays final imported and skipped lead counts
+- ⚡ Fast and responsive user interface
+- 🌐 Deployed as a live web application
 
 ## 🛠️ Tech Stack
 
-* Next.js
-* React
-* TypeScript
-* Tailwind CSS
-* Vercel
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Vercel
 
 ## 🚀 Getting Started
 
@@ -42,7 +46,7 @@ npm run dev
 
 Open your browser:
 
-```
+```text
 http://localhost:3000
 ```
 

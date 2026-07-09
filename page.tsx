@@ -234,4 +234,3 @@ reader.readAsText(selectedFile);
     </main>
   );
 }
-

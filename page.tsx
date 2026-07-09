@@ -213,10 +213,10 @@ reader.readAsText(selectedFile);
   });
 
   if (
-    name?.trim() &&
-    email?.trim() &&
-    phone?.trim() &&
-    company?.trim()
+    name.trim() &&
+    email.trim() &&
+    phone.trim() &&
+    company.trim()
   ) {
     validRows++;
   } else {
@@ -224,21 +224,9 @@ reader.readAsText(selectedFile);
   }
 });
 
-  if (
-    name?.trim() &&
-    email?.trim() &&
-    phone?.trim() &&
-    company?.trim()
-  ) {
-    validRows++;
-  } else {
-    invalidRows++;
-  }
-});
-
-  setImportedCount(validRows);
-  setSkippedCount(invalidRows);
-  setImportStarted(true);
+setImportedCount(validRows);
+setSkippedCount(invalidRows);
+setImportStarted(true);
 }}
     className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800"
   >

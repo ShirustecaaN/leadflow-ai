@@ -204,6 +204,26 @@ reader.readAsText(selectedFile);
   const phone = row[columnMap.Phone];
   const company = row[columnMap.Company];
 
+  console.log({
+    row,
+    name,
+    email,
+    phone,
+    company,
+  });
+
+  if (
+    name?.trim() &&
+    email?.trim() &&
+    phone?.trim() &&
+    company?.trim()
+  ) {
+    validRows++;
+  } else {
+    invalidRows++;
+  }
+});
+
   if (
     name?.trim() &&
     email?.trim() &&

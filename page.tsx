@@ -10,6 +10,7 @@ export default function Home() {
   const [importStarted, setImportStarted] = useState(false);
   const [skippedCount, setSkippedCount] = useState(0);
   const [importedCount, setImportedCount] = useState(0);
+  const [columnMap, setColumnMap] = useState<Record<string, number>>({});
 
   function chooseFile() {
     fileInputRef.current?.click();
@@ -34,18 +35,42 @@ reader.onload = () => {
   const lines = text.trim().split("\n");
 
   const csvHeaders = lines[0].replace("\r", "").split(",");
-  const csvRows = lines
+
+const csvRows = lines
   .slice(1)
   .map((line) => line.replace("\r", "").split(","));
-  
 
-  
-  setHeaders(csvHeaders);
-  setRows(csvRows);
+
+const map: Record<string, number> = {};
+
+csvHeaders.forEach((header, index) => {
+  const column = header.toLowerCase().trim();
+
+  if (column === "name") {
+    map.Name = index;
+  }
+
+  if (column === "email") {
+    map.Email = index;
+  }
+
+  if (column === "phone") {
+    map.Phone = index;
+  }
+
+  if (column === "company") {
+    map.Company = index;
+  }
+});
+
+
+setColumnMap(map);
+setHeaders(csvHeaders);
+setRows(csvRows);
 };
 
 reader.readAsText(selectedFile);
-  }
+}
 
   return (
     <main className="min-h-screen bg-slate-50 px-5 py-8 text-slate-900 sm:px-10">
@@ -170,15 +195,22 @@ reader.readAsText(selectedFile);
   let invalidRows = 0;
 
   rows.forEach((row) => {
-    const email = row[1];
-    const phone = row[2];
+  const name = row[columnMap.Name];
+  const email = row[columnMap.Email];
+  const phone = row[columnMap.Phone];
+  const company = row[columnMap.Company];
 
-    if (email || phone) {
-      validRows++;
-    } else {
-      invalidRows++;
-    }
-  });
+  if (
+    name?.trim() &&
+    email?.trim() &&
+    phone?.trim() &&
+    company?.trim()
+  ) {
+    validRows++;
+  } else {
+    invalidRows++;
+  }
+});
 
   setImportedCount(validRows);
   setSkippedCount(invalidRows);

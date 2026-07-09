@@ -199,10 +199,10 @@ reader.readAsText(selectedFile);
   let invalidRows = 0;
 
   rows.forEach((row) => {
-  const name = row[columnMap.Name];
-  const email = row[columnMap.Email];
-  const phone = row[columnMap.Phone];
-  const company = row[columnMap.Company];
+  const name = String(row[columnMap.Name] ?? "");
+  const email = String(row[columnMap.Email] ?? "");
+  const phone = String(row[columnMap.Phone] ?? "");
+  const company = String(row[columnMap.Company] ?? "");
 
   console.log({
     row,

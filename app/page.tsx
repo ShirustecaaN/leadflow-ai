@@ -199,7 +199,7 @@ reader.readAsText(selectedFile);
     </p>
     <div className="mt-4 flex gap-3">
   <span className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-emerald-700">
-    Imported: {importedCSount}
+    Imported: {importedCount}
   </span>
   <span className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-rose-700">
     Skipped: {skippedCount}

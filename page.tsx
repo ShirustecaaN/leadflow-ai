@@ -1,15 +1,19 @@
+
 "use client";
 
 import { useRef, useState } from "react";
 
 export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [fileName, setFileName] = useState("");
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<string[][]>([]);
+  const [emailIndex, setEmailIndex] = useState<number | null>(null);
+  const [phoneIndex, setPhoneIndex] = useState<number | null>(null);
   const [importStarted, setImportStarted] = useState(false);
-  const [skippedCount, setSkippedCount] = useState(0);
   const [importedCount, setImportedCount] = useState(0);
+  const [skippedCount, setSkippedCount] = useState(0);
 
   function chooseFile() {
     fileInputRef.current?.click();
@@ -27,24 +31,69 @@ export default function Home() {
     }
 
     setFileName(selectedFile.name);
+    setImportStarted(false);
+
     const reader = new FileReader();
 
-reader.onload = () => {
-  const text = reader.result as string;
-  const lines = text.trim().split("\n");
+    reader.onload = () => {
+      const text = reader.result as string;
+      const lines = text.trim().split("\n");
 
-  const csvHeaders = lines[0].replace("\r", "").split(",");
-  const csvRows = lines
-  .slice(1)
-  .map((line) => line.replace("\r", "").split(","));
-  
+      const csvHeaders = lines[0]
+        .replace("\r", "")
+        .split(",")
+        .map((header) => header.trim());
 
-  
-  setHeaders(csvHeaders);
-  setRows(csvRows);
-};
+      const csvRows = lines
+        .slice(1)
+        .map((line) =>
+          line
+            .replace("\r", "")
+            .split(",")
+            .map((cell) => cell.trim())
+        );
 
-reader.readAsText(selectedFile);
+      const foundEmailIndex = csvHeaders.findIndex((header) => {
+        const heading = header.toLowerCase();
+        return heading.includes("email") || heading.includes("mail");
+      });
+
+      const foundPhoneIndex = csvHeaders.findIndex((header) => {
+        const heading = header.toLowerCase();
+        return (
+          heading.includes("phone") ||
+          heading.includes("mobile") ||
+          heading.includes("contact")
+        );
+      });
+
+      setHeaders(csvHeaders);
+      setRows(csvRows);
+      setEmailIndex(foundEmailIndex === -1 ? null : foundEmailIndex);
+      setPhoneIndex(foundPhoneIndex === -1 ? null : foundPhoneIndex);
+    };
+
+    reader.readAsText(selectedFile);
+  }
+
+  function confirmImport() {
+    let validRows = 0;
+    let invalidRows = 0;
+
+    rows.forEach((row) => {
+      const email = emailIndex !== null ? row[emailIndex] ?? "" : "";
+      const phone = phoneIndex !== null ? row[phoneIndex] ?? "" : "";
+
+      if (email.trim() || phone.trim()) {
+        validRows++;
+      } else {
+        invalidRows++;
+      }
+    });
+
+    setImportedCount(validRows);
+    setSkippedCount(invalidRows);
+    setImportStarted(true);
   }
 
   return (
@@ -119,94 +168,85 @@ reader.readAsText(selectedFile);
             <p className="font-semibold text-emerald-800">File selected</p>
             <p className="mt-1 text-sm text-emerald-700">{fileName}</p>
             <p className="mt-1 text-sm text-emerald-700">
-  Preview ready: {rows.length} lead rows and {headers.length} columns found.
-</p>
-            <p className="mt-2 text-sm text-emerald-700">
-              Next, we will show a preview so you can review the data before
-              importing it.
+              Preview ready: {rows.length} lead rows and {headers.length} columns found.
             </p>
           </div>
         )}
+
         {headers.length > 0 && (
-  <section className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
-    <h2 className="text-lg font-semibold">Preview before import</h2>
-    <p className="mt-1 text-sm text-slate-500">
-      Review the original CSV data. Nothing has been processed yet.
-    </p>
+          <section className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold">Preview before import</h2>
 
-    <div className="mt-4 overflow-x-auto">
-      <table className="min-w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-slate-200">
-            {headers.map((header) => (
-              <th key={header} className="whitespace-nowrap px-3 py-3 font-semibold">
-                {header}
-              </th>
-            ))}
-          </tr>
-        </thead>
+            <p className="mt-1 text-sm text-slate-500">
+              Review the original CSV data. Nothing has been processed yet.
+            </p>
 
-        <tbody>
-          {rows.map((row, rowIndex) => (
-            <tr key={rowIndex} className="border-b border-slate-100">
-              {row.map((cell, cellIndex) => (
-                <td key={cellIndex} className="whitespace-nowrap px-3 py-3 text-slate-600">
-                  {cell}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-    <div className="mt-6 flex items-center justify-between gap-4 border-t border-slate-100 pt-5">
-  <p className="text-sm text-slate-500">
-    {rows.length} rows are ready for review.
-  </p>
+            <div className="mt-4 overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    {headers.map((header, index) => (
+                      <th
+                        key={`${header}-${index}`}
+                        className="whitespace-nowrap px-3 py-3 font-semibold"
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
 
-  <button
-    onClick={() => {
-  let validRows = 0;
-  let invalidRows = 0;
+                <tbody>
+                  {rows.map((row, rowIndex) => (
+                    <tr key={rowIndex} className="border-b border-slate-100">
+                      {row.map((cell, cellIndex) => (
+                        <td
+                          key={cellIndex}
+                          className="whitespace-nowrap px-3 py-3 text-slate-600"
+                        >
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-  rows.forEach((row) => {
-    const email = row[1];
-    const phone = row[2];
+            <div className="mt-6 flex items-center justify-between gap-4 border-t border-slate-100 pt-5">
+              <p className="text-sm text-slate-500">
+                {rows.length} rows are ready for review.
+              </p>
 
-    if (email || phone) {
-      validRows++;
-    } else {
-      invalidRows++;
-    }
-  });
+              <button
+                onClick={confirmImport}
+                className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800"
+              >
+                Confirm import
+              </button>
+            </div>
+          </section>
+        )}
 
-  setImportedCount(validRows);
-  setSkippedCount(invalidRows);
-  setImportStarted(true);
-}}
-    className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800"
-  >
-    Confirm import
-  </button>
-</div>
-  </section>
-)}
-{importStarted && (
-  <section className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
-    <p className="font-semibold text-blue-900">Import request received</p>
-    <p className="mt-1 text-sm text-blue-800">
-      Next, LeadFlow AI will map your CSV columns into CRM fields.
-    </p>
-    <div className="mt-4 flex gap-3">
-  <span className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-emerald-700">
-    Imported: {importedCount}
-  </span>
-  <span className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-rose-700">
-    Skipped: {skippedCount}
-  </span>
-</div>
-  </section>
-)}
+        {importStarted && (
+          <section className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+            <p className="font-semibold text-blue-900">Import request received</p>
+
+            <p className="mt-1 text-sm text-blue-800">
+              LeadFlow AI found email and phone columns automatically.
+            </p>
+
+            <div className="mt-4 flex gap-3">
+              <span className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-emerald-700">
+                Imported: {importedCount}
+              </span>
+
+              <span className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-rose-700">
+                Skipped: {skippedCount}
+              </span>
+            </div>
+          </section>
+        )}
 
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl bg-white p-5 shadow-sm">

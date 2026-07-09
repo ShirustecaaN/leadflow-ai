@@ -67,6 +67,10 @@ csvHeaders.forEach((header, index) => {
 setColumnMap(map);
 setHeaders(csvHeaders);
 setRows(csvRows);
+
+console.log("COLUMN MAP:", map);
+console.log("FIRST ROW:", csvRows[0]);
+console.log("SECOND ROW:", csvRows[1]);
 };
 
 reader.readAsText(selectedFile);

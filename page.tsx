@@ -38,7 +38,7 @@ reader.onload = () => {
 
 const csvRows = lines
   .slice(1)
-  .map((line) => line.replace("\r", "").split(","));
+  .map((line) => line.replace("\r", "").split(",").map(cell => cell.trim()));
 
 
 const map: Record<string, number> = {};

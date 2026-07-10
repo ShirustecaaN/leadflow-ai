@@ -99,7 +99,7 @@ function getCellValue(row: string[], possibleHeaders: string[]) {
 
     try {
       const response = await fetch(
-  "https://leadflow-ai-backend-4gp3.onrender.com/import",
+  "https://leadflow-ai-backend-4gp3.onrender.com/import-leads",
   {
     method: "POST",
     headers: {

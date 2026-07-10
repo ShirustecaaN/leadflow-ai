@@ -1,59 +1,139 @@
-# 🚀 LeadFlow AI
+# LeadFlow AI
 
-LeadFlow AI is a CRM-style web application that helps users review and validate lead data by uploading CSV files.
+An AI-powered CSV importer that converts messy lead spreadsheets into CRM-ready contacts using Gemini AI.
 
-The application displays the original CSV data in a structured preview table before import. It checks whether each lead has at least one contact method and separates usable leads from incomplete leads.
+## 🚀 Overview
+
+LeadFlow AI helps businesses import lead data from different CSV formats and automatically extracts important CRM fields.
+
+The application allows users to:
+
+- Upload any CSV lead file
+- Preview data before processing
+- Confirm import only when ready
+- Use AI to map different column names into CRM fields
+- View imported and skipped records
 
 ## ✨ Features
 
-- 📂 Upload CSV lead files
-- 📊 Preview original CSV data in a structured table
-- 🔢 Shows the number of lead rows and columns found
-- 📞 Checks each lead for contact information
-- ✅ Imports a lead when it has an email address or phone number
-- ⏭️ Skips a lead only when both email and phone number are missing
-- 📈 Displays final imported and skipped lead counts
-- ⚡ Fast and responsive user interface
-- 🌐 Deployed as a live web application
+### CSV Import
+- Upload CSV files from different sources
+- Preview original CSV data before processing
+- Supports different column names and structures
+
+### AI-Powered Extraction
+- Uses Gemini AI for intelligent field mapping
+- Converts messy CSV data into CRM format
+- Understands different column names like:
+  - Customer Name → Name
+  - Mail ID → Email
+  - Contact No → Mobile
+  - Location → City
+  - Comments → CRM Notes
+
+### Data Validation
+- Automatically skips invalid records
+- Skips leads without email and mobile number
+- Displays skipped rows with reasons
+
+### User Experience
+- Responsive tables
+- Sticky headers
+- Loading state during AI processing
+- Import summary showing total imported and skipped records
 
 ## 🛠️ Tech Stack
 
+### Frontend
 - Next.js
 - React
 - TypeScript
 - Tailwind CSS
-- Vercel
 
-## 🚀 Getting Started
+### Backend
+- Node.js
+- Express.js
 
-Clone the repository:
+### AI
+- Google Gemini API
 
-```bash
-git clone https://github.com/ShirustecaaN/leadflow-ai.git
-```
+## 📂 Project Structure
+
+
+leadflow-ai/
+│
+├── app/ # Next.js frontend
+│
+├── backend/
+│ ├── server.js # Express API server
+│ └── services/
+│ └── aiExtractor.js # Gemini AI extraction logic
+│
+├── README.md
+└── package.json
+
+
+## ⚙️ Setup Instructions
+
+### Frontend Setup
 
 Install dependencies:
 
 ```bash
 npm install
-```
 
-Run the development server:
+Run frontend:
 
-```bash
 npm run dev
-```
 
-Open your browser:
+Frontend runs on:
 
-```text
 http://localhost:3000
-```
+Backend Setup
 
-## 🌐 Live Demo
+Go to backend folder:
 
-https://leadflow-570spj1ql-nshirustecaa2906-4876s-projects.vercel.app/
+cd backend
 
-## 👩‍💻 Author
+Install dependencies:
+
+npm install
+
+Create a .env file:
+
+GEMINI_API_KEY=your_api_key_here
+
+Start backend:
+
+node server.js
+
+Backend runs on:
+
+http://localhost:5000
+🔄 Application Flow
+Upload CSV
+     ↓
+Preview Original Data
+     ↓
+Confirm Import
+     ↓
+Gemini AI Extraction
+     ↓
+CRM Ready Records
+     ↓
+Imported / Skipped Results
+📌 CRM Fields Extracted
+Name
+Email
+Mobile Number
+Company
+City
+Country
+CRM Status
+CRM Notes
+🔒 Security
+API keys are stored using environment variables
+Data processing happens only after user confirmation
+👩‍💻 Author
 
 Shirustecaa Nagesh

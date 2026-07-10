@@ -11,9 +11,11 @@ export default function Home() {
   const [emailIndex, setEmailIndex] = useState<number | null>(null);
   const [phoneIndex, setPhoneIndex] = useState<number | null>(null);
   const [importStarted, setImportStarted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [importedCount, setImportedCount] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
-
+  const [importedLeads, setImportedLeads] = useState<any[]>([]);
+  const [skippedLeads, setSkippedLeads] = useState<any[]>([]);
   function chooseFile() {
     fileInputRef.current?.click();
   }
@@ -74,25 +76,48 @@ export default function Home() {
 
     reader.readAsText(selectedFile);
   }
+function getCellValue(row: string[], possibleHeaders: string[]) {
+  const columnIndex = headers.findIndex((header) =>
+    possibleHeaders.some((possibleHeader) =>
+      header.toLowerCase().includes(possibleHeader)
+    )
+  );
 
-  function confirmImport() {
-    let validRows = 0;
-    let invalidRows = 0;
+  return columnIndex === -1 ? "" : row[columnIndex] ?? "";
+}
+   async function confirmImport() {
+    setLoading(true);
+    
+    const leads = rows.map((row) => ({
+  name: getCellValue(row, ["name", "full name", "customer"]),
+  email: getCellValue(row, ["email", "mail"]),
+  phone: getCellValue(row, ["phone", "mobile", "contact"]),
+  company: getCellValue(row, ["company", "organization", "business"]),
+  city: getCellValue(row, ["city", "location", "place"]),
+  notes: getCellValue(row, ["remarks", "notes", "comment", "message"]),
+}));
 
-    rows.forEach((row) => {
-      const email = emailIndex !== null ? row[emailIndex] ?? "" : "";
-      const phone = phoneIndex !== null ? row[phoneIndex] ?? "" : "";
+    try {
+      const response = await fetch("http://localhost:5000/import-leads", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(leads),
+      });
 
-      if (email.trim() || phone.trim()) {
-        validRows++;
-      } else {
-        invalidRows++;
-      }
-    });
+      const result = await response.json();
 
-    setImportedCount(validRows);
-    setSkippedCount(invalidRows);
-    setImportStarted(true);
+      setImportedCount(result.imported);
+      setSkippedCount(result.skipped);
+      setImportedLeads(result.importedLeads || []);
+      setSkippedLeads(result.skippedLeads || []);
+      setImportStarted(true);
+      setLoading(false);
+ 
+    } catch {
+      alert("Backend is not running. Please start the backend server.");
+    }
   }
 
   return (
@@ -218,11 +243,12 @@ export default function Home() {
               </p>
 
               <button
-                onClick={confirmImport}
-                className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800"
-              >
-                Confirm import
-              </button>
+  onClick={confirmImport}
+  disabled={loading}
+  className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:opacity-50"
+>
+  {loading ? "AI is processing..." : "Confirm import"}
+</button>
             </div>
           </section>
         )}
@@ -246,6 +272,108 @@ export default function Home() {
             </div>
           </section>
         )}
+        {importStarted && importedLeads.length > 0 && (
+  <section className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
+    <h2 className="text-lg font-semibold">Imported CRM contacts</h2>
+    <p className="mt-1 text-sm text-slate-500">
+      Successfully imported lead records.
+    </p>
+
+    <div className="mt-4 max-h-80 overflow-auto">
+      <table className="min-w-full text-left text-sm">
+        <thead className="sticky top-0 bg-white">
+          <tr className="border-b border-slate-200">
+                <th className="px-3 py-3 font-semibold">Name</th>
+                <th className="px-3 py-3 font-semibold">Email</th>
+                <th className="px-3 py-3 font-semibold">Mobile</th>
+                <th className="px-3 py-3 font-semibold">Company</th>
+                <th className="px-3 py-3 font-semibold">City</th>
+                <th className="px-3 py-3 font-semibold">Country</th>
+                <th className="px-3 py-3 font-semibold">CRM Status</th>
+                <th className="px-3 py-3 font-semibold">CRM Note</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {importedLeads.map((lead) => (
+            <tr key={lead.id} className="border-b border-slate-100">
+                    <td className="whitespace-nowrap px-3 py-3">
+                       {lead.name}
+                    </td>
+
+                    <td className="whitespace-nowrap px-3 py-3">
+                       {lead.email || "—"}
+                    </td>
+
+                     <td className="whitespace-nowrap px-3 py-3">
+                       {lead.mobile_without_country_code || "—"}
+                    </td>
+
+                    <td className="whitespace-nowrap px-3 py-3">
+                      {lead.company || "—"}
+                    </td>
+
+                    <td className="whitespace-nowrap px-3 py-3">
+                      {lead.city || "—"}
+                    </td>
+
+                    <td className="whitespace-nowrap px-3 py-3">
+                      {lead.country || "—"}
+                    </td>
+
+                     <td className="whitespace-nowrap px-3 py-3">
+                      {lead.crm_status || "—"}
+                      </td>
+
+<td className="whitespace-nowrap px-3 py-3">
+  {lead.crm_note || "—"}
+</td>
+                
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+)}
+{importStarted && skippedLeads.length > 0 && (
+  <section className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
+    <h2 className="text-lg font-semibold">Skipped Leads</h2>
+
+    <p className="mt-1 text-sm text-slate-500">
+      These records were skipped during import.
+    </p>
+
+    <div className="mt-4 max-h-80 overflow-auto">
+      <table className="min-w-full text-left text-sm">
+        <thead className="sticky top-0 bg-white">
+          <tr className="border-b border-slate-200">
+            <th className="px-3 py-3 font-semibold">Row</th>
+            <th className="px-3 py-3 font-semibold">Name</th>
+            <th className="px-3 py-3 font-semibold">Email</th>
+            <th className="px-3 py-3 font-semibold">Phone</th>
+            <th className="px-3 py-3 font-semibold">Reason</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {skippedLeads.map((lead) => (
+            <tr key={lead.rowNumber} className="border-b border-slate-100">
+              <td className="px-3 py-3">{lead.rowNumber}</td>
+              <td className="px-3 py-3">{lead.name}</td>
+              <td className="px-3 py-3">{lead.email}</td>
+              <td className="px-3 py-3">{lead.phone}</td>
+              <td className="px-3 py-3">
+                {lead.reason}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+)}
+
 
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl bg-white p-5 shadow-sm">

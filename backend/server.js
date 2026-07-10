@@ -113,7 +113,6 @@ if (phone && !isValidPhone(phone)) {
   skippedLeads: skippedLeads,
 });
 });
-});
 
 app.listen(PORT, () => {
   console.log(`LeadFlow AI backend is running on http://localhost:${PORT}`);

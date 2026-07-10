@@ -98,13 +98,16 @@ function getCellValue(row: string[], possibleHeaders: string[]) {
 }));
 
     try {
-      const response = await fetch("http://localhost:5000/import-leads", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(leads),
-      });
+      const response = await fetch(
+  "https://leadflow-ai-backend-4gp3.onrender.com/import",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ leads: csvData }),
+  }
+);
 
       const result = await response.json();
 

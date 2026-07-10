@@ -106,13 +106,12 @@ if (phone && !isValidPhone(phone)) {
 });
   });
 
-  const crmLeads = await extractCRMData(importedLeads);
-
-res.json({
-  imported: crmLeads.length,
+ res.json({
+  imported: importedLeads.length,
   skipped: skippedLeads.length,
-  importedLeads: crmLeads,
-  skippedLeads,
+  importedLeads: importedLeads,
+  skippedLeads: skippedLeads,
+});
 });
 });
 

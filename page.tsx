@@ -105,7 +105,7 @@ function getCellValue(row: string[], possibleHeaders: string[]) {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ leads }),
+    body: JSON.stringify(leads),
   }
 );
 

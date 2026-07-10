@@ -4,13 +4,18 @@ import { useRef, useState } from "react";
 
 export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [fileName, setFileName] = useState("");
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<string[][]>([]);
+  const [emailIndex, setEmailIndex] = useState<number | null>(null);
+  const [phoneIndex, setPhoneIndex] = useState<number | null>(null);
   const [importStarted, setImportStarted] = useState(false);
-  const [skippedCount, setSkippedCount] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [importedCount, setImportedCount] = useState(0);
-
+  const [skippedCount, setSkippedCount] = useState(0);
+  const [importedLeads, setImportedLeads] = useState<any[]>([]);
+  const [skippedLeads, setSkippedLeads] = useState<any[]>([]);
   function chooseFile() {
     fileInputRef.current?.click();
   }
@@ -27,24 +32,95 @@ export default function Home() {
     }
 
     setFileName(selectedFile.name);
+    setImportStarted(false);
+
     const reader = new FileReader();
 
-reader.onload = () => {
-  const text = reader.result as string;
-  const lines = text.trim().split("\n");
+    reader.onload = () => {
+      const text = reader.result as string;
+      const lines = text.trim().split("\n");
 
-  const csvHeaders = lines[0].replace("\r", "").split(",");
-  const csvRows = lines
-  .slice(1)
-  .map((line) => line.replace("\r", "").split(","));
-  
+      const csvHeaders = lines[0]
+        .replace("\r", "")
+        .split(",")
+        .map((header) => header.trim());
 
-  
-  setHeaders(csvHeaders);
-  setRows(csvRows);
-};
+      const csvRows = lines
+        .slice(1)
+        .map((line) =>
+          line
+            .replace("\r", "")
+            .split(",")
+            .map((cell) => cell.trim())
+        );
 
-reader.readAsText(selectedFile);
+      const foundEmailIndex = csvHeaders.findIndex((header) => {
+        const heading = header.toLowerCase();
+        return heading.includes("email") || heading.includes("mail");
+      });
+
+      const foundPhoneIndex = csvHeaders.findIndex((header) => {
+        const heading = header.toLowerCase();
+        return (
+          heading.includes("phone") ||
+          heading.includes("mobile") ||
+          heading.includes("contact")
+        );
+      });
+
+      setHeaders(csvHeaders);
+      setRows(csvRows);
+      setEmailIndex(foundEmailIndex === -1 ? null : foundEmailIndex);
+      setPhoneIndex(foundPhoneIndex === -1 ? null : foundPhoneIndex);
+    };
+
+    reader.readAsText(selectedFile);
+  }
+function getCellValue(row: string[], possibleHeaders: string[]) {
+  const columnIndex = headers.findIndex((header) =>
+    possibleHeaders.some((possibleHeader) =>
+      header.toLowerCase().includes(possibleHeader)
+    )
+  );
+
+  return columnIndex === -1 ? "" : row[columnIndex] ?? "";
+}
+   async function confirmImport() {
+    setLoading(true);
+    
+    const leads = rows.map((row) => ({
+  name: getCellValue(row, ["name", "full name", "customer"]),
+  email: getCellValue(row, ["email", "mail"]),
+  phone: getCellValue(row, ["phone", "mobile", "contact"]),
+  company: getCellValue(row, ["company", "organization", "business"]),
+  city: getCellValue(row, ["city", "location", "place"]),
+  notes: getCellValue(row, ["remarks", "notes", "comment", "message"]),
+}));
+
+    try {
+      const response = await fetch(
+  "https://leadflow-ai-backend-4gp3.onrender.com/import-leads",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(leads),
+  }
+);
+
+      const result = await response.json();
+
+      setImportedCount(result.imported);
+      setSkippedCount(result.skipped);
+      setImportedLeads(result.importedLeads || []);
+      setSkippedLeads(result.skippedLeads || []);
+      setImportStarted(true);
+      setLoading(false);
+ 
+    } catch {
+      alert("Backend is not running. Please start the backend server.");
+    }
   }
 
   return (
@@ -119,94 +195,188 @@ reader.readAsText(selectedFile);
             <p className="font-semibold text-emerald-800">File selected</p>
             <p className="mt-1 text-sm text-emerald-700">{fileName}</p>
             <p className="mt-1 text-sm text-emerald-700">
-  Preview ready: {rows.length} lead rows and {headers.length} columns found.
-</p>
-            <p className="mt-2 text-sm text-emerald-700">
-              Next, we will show a preview so you can review the data before
-              importing it.
+              Preview ready: {rows.length} lead rows and {headers.length} columns found.
             </p>
           </div>
         )}
+
         {headers.length > 0 && (
+          <section className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold">Preview before import</h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Review the original CSV data. Nothing has been processed yet.
+            </p>
+
+            <div className="mt-4 overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    {headers.map((header, index) => (
+                      <th
+                        key={`${header}-${index}`}
+                        className="whitespace-nowrap px-3 py-3 font-semibold"
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {rows.map((row, rowIndex) => (
+                    <tr key={rowIndex} className="border-b border-slate-100">
+                      {row.map((cell, cellIndex) => (
+                        <td
+                          key={cellIndex}
+                          className="whitespace-nowrap px-3 py-3 text-slate-600"
+                        >
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-6 flex items-center justify-between gap-4 border-t border-slate-100 pt-5">
+              <p className="text-sm text-slate-500">
+                {rows.length} rows are ready for review.
+              </p>
+
+              <button
+  onClick={confirmImport}
+  disabled={loading}
+  className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:opacity-50"
+>
+  {loading ? "AI is processing..." : "Confirm import"}
+</button>
+            </div>
+          </section>
+        )}
+
+        {importStarted && (
+          <section className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+            <p className="font-semibold text-blue-900">Import request received</p>
+
+            <p className="mt-1 text-sm text-blue-800">
+              LeadFlow AI found email and phone columns automatically.
+            </p>
+
+            <div className="mt-4 flex gap-3">
+              <span className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-emerald-700">
+                Imported: {importedCount}
+              </span>
+
+              <span className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-rose-700">
+                Skipped: {skippedCount}
+              </span>
+            </div>
+          </section>
+        )}
+        {importStarted && importedLeads.length > 0 && (
   <section className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
-    <h2 className="text-lg font-semibold">Preview before import</h2>
+    <h2 className="text-lg font-semibold">Imported CRM contacts</h2>
     <p className="mt-1 text-sm text-slate-500">
-      Review the original CSV data. Nothing has been processed yet.
+      Successfully imported lead records.
     </p>
 
-    <div className="mt-4 overflow-x-auto">
+    <div className="mt-4 max-h-80 overflow-auto">
       <table className="min-w-full text-left text-sm">
-        <thead>
+        <thead className="sticky top-0 bg-white">
           <tr className="border-b border-slate-200">
-            {headers.map((header) => (
-              <th key={header} className="whitespace-nowrap px-3 py-3 font-semibold">
-                {header}
-              </th>
-            ))}
+                <th className="px-3 py-3 font-semibold">Name</th>
+                <th className="px-3 py-3 font-semibold">Email</th>
+                <th className="px-3 py-3 font-semibold">Mobile</th>
+                <th className="px-3 py-3 font-semibold">Company</th>
+                <th className="px-3 py-3 font-semibold">City</th>
+                <th className="px-3 py-3 font-semibold">Country</th>
+                <th className="px-3 py-3 font-semibold">CRM Status</th>
+                <th className="px-3 py-3 font-semibold">CRM Note</th>
           </tr>
         </thead>
 
         <tbody>
-          {rows.map((row, rowIndex) => (
-            <tr key={rowIndex} className="border-b border-slate-100">
-              {row.map((cell, cellIndex) => (
-                <td key={cellIndex} className="whitespace-nowrap px-3 py-3 text-slate-600">
-                  {cell}
-                </td>
-              ))}
+          {importedLeads.map((lead) => (
+            <tr key={lead.id} className="border-b border-slate-100">
+                    <td className="whitespace-nowrap px-3 py-3">
+                       {lead.name}
+                    </td>
+
+                    <td className="whitespace-nowrap px-3 py-3">
+                       {lead.email || "—"}
+                    </td>
+
+                     <td className="whitespace-nowrap px-3 py-3">
+                       {lead.mobile_without_country_code || "—"}
+                    </td>
+
+                    <td className="whitespace-nowrap px-3 py-3">
+                      {lead.company || "—"}
+                    </td>
+
+                    <td className="whitespace-nowrap px-3 py-3">
+                      {lead.city || "—"}
+                    </td>
+
+                    <td className="whitespace-nowrap px-3 py-3">
+                      {lead.country || "—"}
+                    </td>
+
+                     <td className="whitespace-nowrap px-3 py-3">
+                      {lead.crm_status || "—"}
+                      </td>
+
+<td className="whitespace-nowrap px-3 py-3">
+  {lead.crm_note || "—"}
+</td>
+                
             </tr>
           ))}
         </tbody>
       </table>
     </div>
-    <div className="mt-6 flex items-center justify-between gap-4 border-t border-slate-100 pt-5">
-  <p className="text-sm text-slate-500">
-    {rows.length} rows are ready for review.
-  </p>
-
-  <button
-    onClick={() => {
-  let validRows = 0;
-  let invalidRows = 0;
-
-  rows.forEach((row) => {
-    const email = row[1];
-    const phone = row[2];
-
-    if (email || phone) {
-      validRows++;
-    } else {
-      invalidRows++;
-    }
-  });
-
-  setImportedCount(validRows);
-  setSkippedCount(invalidRows);
-  setImportStarted(true);
-}}
-    className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800"
-  >
-    Confirm import
-  </button>
-</div>
   </section>
 )}
-{importStarted && (
-  <section className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
-    <p className="font-semibold text-blue-900">Import request received</p>
-    <p className="mt-1 text-sm text-blue-800">
-      Next, LeadFlow AI will map your CSV columns into CRM fields.
+{importStarted && skippedLeads.length > 0 && (
+  <section className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
+    <h2 className="text-lg font-semibold">Skipped Leads</h2>
+
+    <p className="mt-1 text-sm text-slate-500">
+      These records were skipped during import.
     </p>
-    <div className="mt-4 flex gap-3">
-  <span className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-emerald-700">
-    Imported: {importedCount}
-  </span>
-  <span className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-rose-700">
-    Skipped: {skippedCount}
-  </span>
-</div>
+
+    <div className="mt-4 max-h-80 overflow-auto">
+      <table className="min-w-full text-left text-sm">
+        <thead className="sticky top-0 bg-white">
+          <tr className="border-b border-slate-200">
+            <th className="px-3 py-3 font-semibold">Row</th>
+            <th className="px-3 py-3 font-semibold">Name</th>
+            <th className="px-3 py-3 font-semibold">Email</th>
+            <th className="px-3 py-3 font-semibold">Phone</th>
+            <th className="px-3 py-3 font-semibold">Reason</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {skippedLeads.map((lead) => (
+            <tr key={lead.rowNumber} className="border-b border-slate-100">
+              <td className="px-3 py-3">{lead.rowNumber}</td>
+              <td className="px-3 py-3">{lead.name}</td>
+              <td className="px-3 py-3">{lead.email}</td>
+              <td className="px-3 py-3">{lead.phone}</td>
+              <td className="px-3 py-3">
+                {lead.reason}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   </section>
 )}
+
 
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl bg-white p-5 shadow-sm">
